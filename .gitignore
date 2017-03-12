@@ -4,6 +4,9 @@
 *.o
 *.obj
 
+# LZZ outputs
+lzz-out/*
+
 # Precompiled Headers
 *.gch
 *.pch
@@ -26,3 +29,8 @@
 *.exe
 *.out
 *.app
+bin/*
+
+# Documentation
+doc/*
+

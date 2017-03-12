@@ -1,0 +1,22 @@
+
+#hdr
+#include "include/int.h"
+#end
+
+class SerialBus {
+	public:
+		
+		
+	protected: 
+		u8 GetByte() = 0;
+		ssize_t GetBytes(u8 buf[], size_t n) = 0;
+		void SendByte(u8 byte) = 0;
+		ssize_t SendBytes(u8 buf[], size_t n) = 0;
+		
+	private:
+		
+		
+
+};
+
+

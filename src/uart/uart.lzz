@@ -1,0 +1,332 @@
+
+#hdr
+#include <stdint.h>
+#include "uart/uart-reg.h"
+#include <string>
+#end
+
+#src
+#define UART_BASE 0x01C28400
+#end
+
+namespace Serial 
+{
+/*	class SerialBus
+	{
+	
+	
+	};
+
+	class Peripheral 
+	{
+		public:
+			cpu::mmap::Address GetBaseAddress() { return base_address; };
+		
+		protected:
+			Peripheral(cpu::mmap::Address base_address)
+			{
+				this.base_address = base_address;
+			}
+		
+			bool ReservePeripheral()
+			{
+				#warning not implemented.
+				// try to reserve the peripheral in a thread safe way.
+			}
+		
+		private:
+			cpu::mmap::Address base_address;
+	};
+*/
+	class Uart// : SerialBus, Peripheral
+	{
+		public:
+			Uart(unsigned int uart)
+				//:Peripheral(uart)
+			{
+			/*	if(!ReservePeripheral()){
+					// the UART is already in use (or is an invald address)
+					//throw Exception;
+				}
+			*/
+				reg_list = (uart_reg_t *)uart;
+				fifo_enabled = false;
+			}
+			
+			
+			/**
+			 * @brief Read a byte from the UART.
+			 * @details
+			 * Read byte received on the serial input port (sin) in UART mode, or the serial infrared input (sir_in)
+			 * in infrared mode.  The data is valid only if the Data Ready (DR) bit in the Line Status Register (LCR)
+			 * is set.
+			 *
+			 * If in FIFO mode and the FIFOs are enabled, this accesses the head of the receive FIFO.  If the receive
+			 * FIFO is full and this register is not read before the next data character arrives, the data already in the
+			 * FIFO is preserved, but all incoming data are lost and an overrun error occurs.
+			 */ 
+			unsigned char ReadByte(void)
+			{
+				return reg_list->RBR;
+			}
+
+			/**
+			 * @brief Write a bite to the UART
+			 * @details
+			 * Data to be transmitted on the serial output port (sout) in UART mode
+			 * or the serial infrared output (sir_out_n) in infrared mode. Data should
+			 * only be written to the THR when the THR Empty (THRE) bit (LSR[5]) is
+			 * set. 
+			 *
+			 * If in FIFO mode and FIFOs are enabled (FCR[0] = 1) and THRE is set, 16
+			 * number of characters of data may be written to the THR before the
+			 * FIFO is full. Any attempt to write data when the FIFO is full results the
+			 * write data lost.
+			 */
+			void WriteByte(unsigned char byte)
+			{
+				reg_list->THR = byte;
+			}
+
+			/**
+			 * @brief Set the output BAUD rate divisor
+			 * @details
+			 * The output baud rate equals to the serial clock (sclk) frequency divided
+			 * by sixteen times the value of the baud rate divisor, as follows:
+			 * @f$ baud rate = (serial clock freq)/(16 * @p divisor) @f$
+			 *
+			 * @remark
+			 * Note that with the divisor set to zero, the baud clock is disabled and no serial
+			 * communication occure.  Also, once the divisor is set, at least 8 clock cycles of
+			 * the slowest UART clock should be allowed to pass before transmitting or receiving data.
+			 */
+			void SetDivisor(uint16_t divisor)
+			{
+				//LCR->DLAB =1;
+				//USR[0] = 0;
+				while (IsBusy()) continue;
+				reg_list->LCRbits.DLAB = 0x1; // Select the Divisor latch
+				reg_list->DLL = divisor & 0x000000FF;
+				reg_list->DLH = (divisor >> 8) & 0x000000FF;
+				reg_list->LCRbits.DLAB = 0x0; // release the divisor latch
+			}
+
+			uint16_t GetDivisor(void)
+			{
+				uint16_t rv;
+				reg_list->LCRbits.DLAB = 0x1; // Select the Divisor latch
+				rv = reg_list->DLL;
+				rv |= reg_list->DLH << 8;
+				reg_list->LCRbits.DLAB = 0x0; // release the divisor latch
+				return rv;
+			}
+
+			void DumpRegisters(void)
+			{
+	
+			}
+			
+			void send ( unsigned int x )
+			{
+				while ( !IsTxHoldEmpty() ) continue;
+				reg_list->THR = x;
+			}
+			
+			void hexstrings ( unsigned int d )
+			{
+				unsigned int rb;
+				unsigned int rc;
+
+				rb=32;
+				while(1)
+				{
+					rb-=4;
+					rc=(d>>rb)&0xF;
+					if(rc>9) rc+=0x37; else rc+=0x30;
+					send(rc);
+					if(rb==0) break;
+				}
+				send(0x20);
+			}
+			
+			void hexstring ( unsigned int d )
+			{
+				hexstrings(d);
+				send(0x0D);
+				send(0x0A);
+			}
+
+			/**
+			 * @brief RX Data Error in FIFO
+			 * When FIFOs are disabled, this is allways false.  When FIFOs are enabled,
+			 * this is true when there is at least one Parity Error, Framing Error, or
+			 * Break Interrupt in the RX FIFO.  It is cleared by a read from the LSR register
+			 * provided there are no subsequent errors in the FIFO.
+			 */
+			inline bool IsFifoError() {
+				return reg_list->LSRbits.FIFOERR ? true : false;
+			}
+			
+			/**
+			 * @brief Transmitter Empty
+			 * If the FIFOs are disabled, this bit is set to "1" whenever the TX Holding
+			 * Register and the TX Shift Register are empty. If the FIFOs are enabled,
+			 * this bit is set whenever the TX FIFO and the TX Shift Register are
+			 * empty. In both cases, this bit is cleared when a byte is written to the
+			 * TX data channel.
+			 */
+			inline bool IsTransmitterEmpty() {
+				return reg_list->LSRbits.TEMT ? true : false;
+			}
+			
+			/**
+			 * @brief TX Holding Register Empty
+			 * If the FIFOs are disabled, this bit is set to "1" whenever the TX Holding
+			 * Register is empty and ready to accept new data and it is cleared when
+			 * the CPU writes to the TX Holding Register.
+			 *
+			 * If the FIFOs are enabled, this bit is set to "1" whenever the TX FIFO is
+			 * empty and it is cleared when at least one byte is written to the TX
+			 * FIFO.
+			 */
+			inline bool IsTxHoldEmpty() {
+				return reg_list->LSRbits.THRE ? true : false;
+			}
+			
+			/**
+			 * @brief Break Interrupt Occured
+			 * This is used to indicate the detection of a break sequence on the serial
+			 * input data.
+			 *
+			 * If in UART mode (SIR_MODE == Disabled), it is set whenever the serial
+			 * input, sin, is held in a logic '0' state for longer than the sum of start
+			 * time + data bits + parity + stop bits.
+			 *
+			 * If in infrared mode (SIR_MODE == Enabled), it is set whenever the
+			 * serial input, sir_in, is continuously pulsed to logic '0' for longer than
+			 * the sum of start time + data bits + parity + stop bits. A break condition
+			 * on serial input causes one and only one character, consisting of all
+			 * zeros, to be received by the UART.
+			 *
+			 * In the FIFO mode, the character associated with the break condition is
+			 * carried through the FIFO and is revealed when the character is at the
+			 * top of the FIFO. Reading the LSR clears the BI bit. In the non-FIFO
+			 * mode, the BI indication occurs immediately and persists until the LSR
+			 * is read.
+			 */			
+			inline bool IsBreakInterrupt() {
+				return reg_list->LSRbits.BI ? true : false;
+			}
+			
+			/**
+			 * @brief Framing Error Occured
+			 * This is used to indicate the occurrence of a framing error in the
+			 * receiver. A framing error occurs when the receiver does not detect a
+			 * valid STOP bit in the received data.
+			 *
+			 * In the FIFO mode, since the framing error is associated with a
+			 * character received, it is revealed when the character with the framing
+			 * error is at the top of the FIFO. When a framing error occurs, the UART
+			 * tries to resynchronize. It does this by assuming that the error occurs
+			 * due to the start bit of the next character and then continues receiving
+			 * the other bit i.e. data, and/or parity and stop. It should be noted that
+			 * the Framing Error (FE) bit (LSR[3]) is set if a break interrupt has
+			 * occurred, as indicated by Break Interrupt (BI) bit (LSR[4]).
+			 *
+			 *   - false: no framing error
+			 *   - true: framing error
+			 *
+			 * Reading the LSR clears the FE bit.
+			 */
+			inline bool IsFramingError() {
+				return reg_list->LSRbits.FE ? true : false;
+			}
+			
+			/**
+			 * @brief Parity Error Occured
+			 * This is used to indicate the occurrence of a parity error in the receiver
+			 * if the Parity Enable (PEN) bit (LCR[3]) is set. In the FIFO mode, since
+			 * the parity error is associated with a character received, it is revealed
+			 * when the character with the parity error arrives at the top of the FIFO.
+			 * It should be noted that the Parity Error (PE) bit (LSR[2]) is set if a break
+			 * interrupt has occurred, as indicated by Break Interrupt (BI) bit (LSR[4]).
+			 *
+			 *   - false: no parity error
+			 *   - true: parity error
+			 *
+			 * Reading the LSR clears the PE bit.
+			 */
+			inline bool IsParityError() {
+				return reg_list->LSRbits.PE ? true : false;
+			}
+			
+			/**
+			 * @brief Overrun Error Occured
+			 * This occurs if a new data character is received before the previous data
+			 * is read. In the non-FIFO mode, the OE bit is set when a new character
+			 * arrives in the receiver before the previous character is read from the
+			 * RBR. When this happens, the data in the RBR is overwritten. In the
+			 * FIFO mode, an overrun error occurs when the FIFO is full and a new
+			 * character arrives at the receiver. The data in the FIFO is retained and
+			 * the data in the receive shift register is lost.
+			 *
+			 *   - false: no overrun error
+			 *   - true: overrun error
+			 *
+			 * Reading the LSR clears the OE bit.
+			 */
+			inline bool IsOverrunError() {
+				return reg_list->LSRbits.OE ? true : false;
+			}
+			
+			/**
+			 * @brief Is Data Ready
+			 * This is used to indicate that the receiver contains at least one
+			 * character in the RBR or the receiver FIFO.
+			 *
+			 *   - false: no data ready
+			 *   - true: data ready
+			 *
+			 * This bit is cleared when the RBR is read in non-FIFO mode, or when
+			 * the receiver FIFO is empty in FIFO mode.
+			 */
+			inline bool IsDataReady() {
+				return reg_list->LSRbits.DR ? true : false;
+			}
+			
+			void puts(const char* str) {
+				const char* ptr;
+				for(ptr = str; *ptr; ptr++){
+					send(*ptr);
+				}
+			}
+			
+			void EnableFifo(bool enable = true) {
+				if (enable) {
+					reg_list->FCRbits.FIFOE = 0x1;
+				} else {
+					reg_list->FCRbits.FIFOE = 0x0;
+				}
+				fifo_enabled = enable;
+			}
+			
+			
+			inline bool IsBusy() {
+				return reg_list->USRbits.BUSY ? true : false;
+			}
+
+		protected:
+			
+		private:
+			
+		
+			uart_reg_t * reg_list;
+			bool fifo_enabled;
+	};
+
+
+}
+
+
+
+

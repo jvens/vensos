@@ -1,0 +1,16 @@
+
+
+class Uart
+{
+public:
+	Uart(void);
+	void hexstrings(unsigned int d);
+	void hexstring(unsigned int d);
+private:
+	void send ( unsigned int x );
+	unsigned int recv ( void );
+	void fifo_flush ( void );
+	
+};
+
+
