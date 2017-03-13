@@ -7,9 +7,8 @@ addons:
     - sourceline: 'ppa:team-gcc-arm-embedded/ppa'
     packages:
     - gcc-arm-none-eabi
+    - libc6-i386
+    - lib32stdc++6
 dist: trusty
 sudo: required
 script: make
-before_script:
-  - sudo apt-get update
-  - sudo apt-get install libc6:i386 libstdc++6:i386
