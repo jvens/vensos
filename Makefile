@@ -4,7 +4,7 @@ BIN = main
 
 CWD := $(shell pwd)
 
-LZZ := $(CWD)/lzz
+LZZ := ./lzz
 
 #CROSS_COMPILER ?= arm-linux-gnueabihf-
 CROSS_COMPILER ?= arm-none-eabi-
