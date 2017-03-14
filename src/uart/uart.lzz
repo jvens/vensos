@@ -2,7 +2,7 @@
 #hdr
 #include <stdint.h>
 #include "uart/uart-reg.h"
-#include <string>
+//#include <string>
 #end
 
 #src
