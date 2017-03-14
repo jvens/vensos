@@ -41,7 +41,7 @@ OBJS := $(OBJ_LZZ) $(OBJ_CXX) $(OBJ_C) $(OBJ_S)
 
 #should be -mfloat-abi=hard
 ARCH_FLAGS	= -mcpu=cortex-a8 -mfpu=neon -mfloat-abi=softfp
-CC_FLAGS	= -Wall -O0 -nostartfiles -ffreestanding -fno-unwind-tables -fno-exceptions $(INCLUDE)
+CC_FLAGS	= -Wall -O0 -nostdlib -nostartfiles -ffreestanding -fno-unwind-tables -fno-exceptions $(INCLUDE)
 CXX_FLAGS	= -std=c++11 $(CC_FLAGS)
 AS_FLAGS	= --warn --fatal-warnings
 LZZ_FLAGS	= -sx cpp -hx h $(INCLUDE)
