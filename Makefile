@@ -76,24 +76,28 @@ preprocess_lzz: $(SRC_LZZ_H)
 bin/$(BIN).bin: CMD = $(OBJCOPY) $< -O binary $@
 bin/$(BIN).bin: bin/main.elf
 	$(DEBUG_CMD)
+	@mkdir -p $(dir $@)
 	@$(BUILD_CMD)
 	
 	
 bin/$(BIN).srec: CMD = $(OBJCOPY) --srec-forceS3 $< -O srec $@
 bin/$(BIN).srec: bin/main.elf
 	$(DEBUG_CMD)
+	@mkdir -p $(dir $@)
 	@$(BUILD_CMD)
 	
 	
 bin/$(BIN).list: CMD = $(OBJDUMP) -D $< > $@
 bin/$(BIN).list: bin/main.elf
 	$(DEBUG_CMD)
+	@mkdir -p $(dir $@)
 	@$(BUILD_CMD)
 	
 	
 bin/$(BIN).elf: CMD = $(LD) $^ -T linker.x -o $@
 bin/$(BIN).elf: $(OBJS)
 	$(DEBUG_CMD)
+	@mkdir -p $(dir $@)
 	@$(BUILD_CMD)
 
 
