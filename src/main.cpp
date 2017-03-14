@@ -1,4 +1,7 @@
 
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "uart/uart.h"
 //#include <string>
 #include "int.h"
@@ -33,6 +36,8 @@ int main ( void )
    	u.puts("puts\n\r");
    	//printf("Hello, World from Printf\n\r");
    	//std::cout << "Hello World!\n\r";
+   	
+   	printf("Hello World");
    	
    	union {
    		struct {

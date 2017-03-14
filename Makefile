@@ -12,7 +12,7 @@ CROSS_COMPILER ?= arm-none-eabi-
 CXX := $(CROSS_COMPILER)g++
 CC  := $(CROSS_COMPILER)g++
 AS  := $(CROSS_COMPILER)as
-LD	:= $(CROSS_COMPILER)ld
+LD	:= $(CROSS_COMPILER)g++
 OBJDUMP := $(CROSS_COMPILER)objdump
 OBJCOPY := $(CROSS_COMPILER)objcopy
 
@@ -39,12 +39,13 @@ OBJ_LZZ := $(patsubst %.lzz,$(OBJ_DIR)/%.lzz.o,$(SRC_LZZ))
 
 OBJS := $(OBJ_LZZ) $(OBJ_CXX) $(OBJ_C) $(OBJ_S)
 
-ARCH_FLAGS	= -mcpu=cortex-a8 -mfpu=neon -mfloat-abi=hard
+#should be -mfloat-abi=hard
+ARCH_FLAGS	= -mcpu=cortex-a8 -mfpu=neon -mfloat-abi=softfp
 CC_FLAGS	= -Wall -O0 -nostartfiles -ffreestanding -fno-unwind-tables -fno-exceptions $(INCLUDE)
 CXX_FLAGS	= -std=c++11 $(CC_FLAGS)
 AS_FLAGS	= --warn --fatal-warnings
 LZZ_FLAGS	= -sx cpp -hx h $(INCLUDE)
-LD_FLAGS	= -T linker.x
+LD_FLAGS	= -T linker.x $(CXX_FLAGS)
 
 NO_COLOR=\033[0m
 OK_COLOR=\033[32;01m
