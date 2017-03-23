@@ -6,8 +6,15 @@ Serial::Uart stream(UART_BASE);
 
 // http://www.billgatliff.com/newlib.html
 
+extern char test_flag;
+
 extern "C"{
 
+void _init(void) {return;}
+void _fini(void) {return;}
+
+#undef errno
+extern int errno;
 
 int _fork_r ( struct _reent *ptr )
 {
@@ -15,10 +22,26 @@ int _fork_r ( struct _reent *ptr )
 	return -1;
 }
 
+
+long _write ( struct _reent *ptr, int fd, const void * buf, size_t cnt )
+{
+	size_t i;
+	const char * byte = (const char *)buf;
+	test_flag = 0xA;
+	stream.puts("In _write()\n\r");
+	for ( i=0; i<cnt; i++ ) {
+		stream.WriteByte(*byte);
+		byte ++;
+	}
+	return cnt;
+}
+
 long _write_r ( struct _reent *ptr, int fd, const void * buf, size_t cnt )
 {
 	size_t i;
 	const char * byte = (const char *)buf;
+	test_flag = 0xB;
+	stream.puts("In _write_r()\n\r");
 	for ( i=0; i<cnt; i++ ) {
 		stream.WriteByte(*byte);
 		byte ++;
@@ -97,5 +120,20 @@ int _lseek_r(void *reent, int fd, int ptr, int dir) {
 //  	return 1;
 //}
 
+void __sync_synchronize ()
+{
+	
+}
+
+
+int _kill(int pid, int sig) {
+  errno = EINVAL;
+  return -1;
+}
+
+
+int _getpid(void) {
+  return 1;
+}
 
 }

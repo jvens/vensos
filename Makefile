@@ -11,7 +11,7 @@ CROSS_COMPILER ?= arm-none-eabi-
 
 CXX := $(CROSS_COMPILER)g++
 CC  := $(CROSS_COMPILER)g++
-AS  := $(CROSS_COMPILER)as
+AS  := $(CROSS_COMPILER)g++
 LD	:= $(CROSS_COMPILER)g++
 OBJDUMP := $(CROSS_COMPILER)objdump
 OBJCOPY := $(CROSS_COMPILER)objcopy
@@ -25,7 +25,7 @@ MODULES = $(sort $(dir $(wildcard $(SRC_DIR)/*/)))
 
 SRC_CXX := $(foreach dir,$(MODULES),$(wildcard $(dir)*.cpp))
 SRC_C   := $(foreach dir,$(MODULES),$(wildcard $(dir)*.c))
-SRC_S	:= $(foreach dir,$(MODULES),$(wildcard $(dir)*.s))
+SRC_S	:= $(foreach dir,$(MODULES),$(wildcard $(dir)*.S))
 SRC_LZZ	:= $(foreach dir,$(MODULES),$(wildcard $(dir)*.lzz))
 
 SRC_LZZ_H  := $(patsubst %.lzz,$(LZZ_DIR)/%.h,$(SRC_LZZ))
@@ -34,16 +34,18 @@ INCLUDE := -I $(SRC_DIR)/include -I $(SRC_DIR) -I $(LZZ_DIR)/$(SRC_DIR)
 
 OBJ_CXX := $(patsubst %.cpp,$(OBJ_DIR)/%.cpp.o,$(SRC_CXX))
 OBJ_C   := $(patsubst %.c,$(OBJ_DIR)/%.c.o,$(SRC_C))
-OBJ_S 	:= $(patsubst %.s,$(OBJ_DIR)/%.s.o,$(SRC_S))
+OBJ_S 	:= $(patsubst %.S,$(OBJ_DIR)/%.S.o,$(SRC_S))
 OBJ_LZZ := $(patsubst %.lzz,$(OBJ_DIR)/%.lzz.o,$(SRC_LZZ))
 
 OBJS := $(OBJ_LZZ) $(OBJ_CXX) $(OBJ_C) $(OBJ_S)
 
+# -nostartfiles 
+
 #should be -mfloat-abi=hard
 ARCH_FLAGS	= -mcpu=cortex-a8 -mfpu=neon -mfloat-abi=softfp
-CC_FLAGS	= -Wall -O0 -nostdlib -nostartfiles -ffreestanding -fno-unwind-tables -fno-exceptions $(INCLUDE)
+CC_FLAGS	= -g -Wall -O0 -nostartfiles -ffreestanding -fno-unwind-tables -fno-exceptions $(INCLUDE)
 CXX_FLAGS	= -std=c++11 $(CC_FLAGS)
-AS_FLAGS	= --warn --fatal-warnings
+AS_FLAGS	= $(CC_FLAGS)
 LZZ_FLAGS	= -sx cpp -hx h $(INCLUDE)
 LD_FLAGS	= -T linker.x $(CXX_FLAGS)
 
@@ -87,14 +89,14 @@ bin/$(BIN).srec: bin/main.elf
 	@$(BUILD_CMD)
 	
 	
-bin/$(BIN).list: CMD = $(OBJDUMP) -D $< > $@
+bin/$(BIN).list: CMD = $(OBJDUMP) -d $< > $@
 bin/$(BIN).list: bin/main.elf
 	$(DEBUG_CMD)
 	@mkdir -p $(dir $@)
 	@$(BUILD_CMD)
 	
 	
-bin/$(BIN).elf: CMD = $(LD) $^ -T linker.x -o $@
+bin/$(BIN).elf: CMD = $(LD) $^ $(LD_FLAGS) -o $@
 bin/$(BIN).elf: $(OBJS)
 	$(DEBUG_CMD)
 	@mkdir -p $(dir $@)
@@ -128,8 +130,8 @@ $(OBJ_DIR)/%.c.o: %.c
 	@mkdir -p $(dir $@)
 	@$(BUILD_CMD)
 	
-$(OBJ_DIR)/%.s.o: CMD = $(AS) $(AS_FLAGS) $(ARCH_FLAGS) $< -o $@
-$(OBJ_DIR)/%.s.o: %.s
+$(OBJ_DIR)/%.S.o: CMD = $(AS) $(AS_FLAGS) $(ARCH_FLAGS) -c $< -o $@
+$(OBJ_DIR)/%.S.o: %.S
 	$(DEBUG_CMD)
 	@mkdir -p $(dir $@)
 	@$(BUILD_CMD)

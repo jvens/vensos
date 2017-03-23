@@ -85,7 +85,8 @@ namespace Serial
 			 */
 			void WriteByte(unsigned char byte)
 			{
-				reg_list->THR = byte;
+				//reg_list->THR = byte;
+				send(byte);
 			}
 
 			/**

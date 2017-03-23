@@ -1,11 +1,14 @@
-
+//#include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
+
 
 #include "uart/uart.h"
 //#include <string>
 #include "int.h"
 #define UART_BASE 0x01C28400
+
+
 
 //-------------------------------------------------------------------
 //-------------------------------------------------------------------
@@ -28,17 +31,25 @@ using namespace Serial;
 
 Uart u(UART_BASE);
 
+int test_flag = 0;
 
-int main ( void )
+int main ( int argc, char ** argv )
 {
    	unsigned int * i;
-   	//std::string test = "hello";
-   	u.puts("puts\n\r");
+
+   	*((int*)0x01C28400) = 'A';
+
+   	//setbuf(stdin, NULL);
+  	//setbuf(stdout, NULL);
+   	u.puts("starting\n\r");
+   	//std::string teststr = "hello";
+   	u.puts("string created\n\r");
    	//printf("Hello, World from Printf\n\r");
    	//std::cout << "Hello World!\n\r";
-   	
-   	printf("Hello World");
-   	
+   	test_flag = 0;
+   	printf("Hello World\r\n");
+   	fflush(stdout);
+   	u.hexstring(test_flag);
    	union {
    		struct {
 	   		reg_rw var1;
