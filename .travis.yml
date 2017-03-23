@@ -8,6 +8,7 @@ addons:
     packages:
     - gcc-arm-none-eabi
     - libnewlib-arm-none-eabi
+    - libstdc++-arm-none-eabi
     - libc6-i386
     - lib32stdc++6
 dist: trusty
