@@ -9,6 +9,11 @@ SECTIONS {
 	.start : {
 		KEEP(*(.init))
 		KEEP(*(.fini))
+		__exception_table_start__ = .;
+		*(.exception_table)
+		__interrupt_table_start__ = .;
+		*(.interrupt_table)
+		__interrupt_table_end__ = .;
 	} > DRAM = 0
 	
 	.text : {
@@ -87,6 +92,12 @@ SECTIONS {
 	
 	/* todo heap */
 	__stack = ORIGIN(DRAM) + LENGTH(DRAM);
+	
+	.timer 0x01C20C00 : 
+	{
+		*(.timer)
+	}
+	
 }
 	
 	

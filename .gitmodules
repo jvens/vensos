@@ -1,0 +1,3 @@
+[submodule "CHIP-Hardware"]
+	path = CHIP-Hardware
+	url = git@github.com:NextThingCo/CHIP-Hardware.git
